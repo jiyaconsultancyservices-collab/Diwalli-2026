@@ -28,8 +28,12 @@ h1,h2{font-family:Fraunces,Georgia,serif;margin:0}
 button,input,textarea{touch-action:manipulation}
 
 .hero{position:relative;aspect-ratio:1/1.05;max-height:78vh;overflow:hidden;border-radius:0 0 26px 26px;background:#1a1030}
-.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+.hero-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:0;transform:scale(1.025);transition:opacity .9s ease,transform 5s ease}
+.hero-slide.on{opacity:1;transform:scale(1)}
 .hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,8,40,0) 52%,rgba(20,8,40,.6) 74%,rgba(20,8,40,.95) 100%)}
+.hero-dots{position:absolute;right:18px;bottom:22px;z-index:3;display:flex;gap:7px}
+.hero-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);box-shadow:0 0 0 1px rgba(0,0,0,.14)}
+.hero-dots i.on{background:#ffb52e;transform:scale(1.25)}
 .hero .txt{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:0 clamp(16px,5vw,24px) clamp(18px,5vw,26px);color:#fff4e0}
 .hero h1{font-size:clamp(27px,8vw,36px);line-height:1.08;color:#fff4e0;text-wrap:balance}
 .hero p{margin:7px 0 11px;font-size:clamp(14px,4.2vw,17px);color:#f0dfc4}
@@ -102,12 +106,16 @@ label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
 @media (min-width:600px){
   .hero{aspect-ratio:16/11}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding-inline:18px}.bar,.combos{padding-inline:18px}.combo-list{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}.combo-items{min-height:76px}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.chips,.car{scroll-behavior:auto}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.chips,.car{scroll-behavior:auto}.hero-slide{transition:none;transform:none}}
 </style>
 </head>
 <body>
-<header class="hero">
-  <img src="images/ttc-hero-2026.jpg" alt="TTC Crackers Diwali fireworks over a glowing Indian city">
+<header class="hero" aria-roledescription="carousel" aria-label="TTC Crackers festive collections">
+  <img class="hero-slide on" src="images/ttc-hero-2026.jpg" alt="TTC Crackers Diwali fireworks over a glowing Indian city" aria-hidden="false">
+  <img class="hero-slide" src="images/ttc-family-products.jpg" alt="Sparklers, flower pots and ground chakkars arranged for Diwali" aria-hidden="true">
+  <img class="hero-slide" src="images/ttc-aerial-products.jpg" alt="Sky rockets and aerial fireworks collection" aria-hidden="true">
+  <img class="hero-slide" src="images/ttc-gift-products.jpg" alt="Family fireworks gift boxes with diyas and marigolds" aria-hidden="true">
+  <div class="hero-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
   <div class="txt">
     <h1>TTC Crackers</h1>
     <p>Certified quality, straight from Sivakasi.</p>
@@ -163,9 +171,38 @@ const PRODUCT_ART={
   aerial:"images/ttc-aerial-products.jpg",
   gift:"images/ttc-gift-products.jpg"
 };
+const CATEGORY_ART={
+  "Sparklers":"images/category-sparklers.jpg",
+  "Flower Pots":"images/category-flowerpots.jpg",
+  "Ground Chakkars":"images/category-chakkars.jpg",
+  "Special Fountain":"images/category-flowerpots.jpg",
+  "Colour Fountain":"images/category-flowerpots.jpg",
+  "Colour Matches":"images/category-sparklers.jpg",
+  "Twinkling Stars":"images/category-sparklers.jpg",
+  "Bijili Crackers":"images/category-bombs.jpg",
+  "Single Crackers":"images/category-bombs.jpg",
+  "Sky & Multi Colour Shots":"images/category-aerial.jpg",
+  "Garlands":"images/category-bombs.jpg",
+  "2026 Special Edition":"images/category-aerial.jpg",
+  "Kidzee Zone":"images/category-kids.jpg",
+  "Gun Items":"images/category-kids.jpg",
+  "Fancy Colour Single Shots":"images/category-aerial.jpg",
+  "Wizziling Series":"images/category-aerial.jpg",
+  "Atom Bombs":"images/category-bombs.jpg",
+  "Paper Bombs":"images/category-bombs.jpg",
+  "Sky Rocket":"images/category-rockets.jpg",
+  "Matka Flower Pot":"images/category-flowerpots.jpg",
+  "Pencil Items":"images/category-sparklers.jpg",
+  "Deluxe Crackers":"images/category-bombs.jpg",
+  "Family Combo":"images/category-giftboxes.jpg",
+  "Fireworks Display Crackers":"images/category-aerial.jpg"
+};
 const AERIAL_CATS=new Set(["Sky & Multi Colour Shots","Fancy Colour Single Shots","Sky Rocket","Fireworks Display Crackers","2026 Special Edition","Wizziling Series"]);
 const GIFT_CATS=new Set(["Family Combo","Kidzee Zone","Gun Items"]);
-PRODUCTS.forEach(p=>{p.imgs=[GIFT_CATS.has(p.cat)?PRODUCT_ART.gift:AERIAL_CATS.has(p.cat)?PRODUCT_ART.aerial:PRODUCT_ART.family]});
+PRODUCTS.forEach(p=>{
+  const secondary=GIFT_CATS.has(p.cat)?PRODUCT_ART.gift:AERIAL_CATS.has(p.cat)?PRODUCT_ART.aerial:PRODUCT_ART.family;
+  p.imgs=[CATEGORY_ART[p.cat]||PRODUCT_ART.family,secondary];
+});
 const $=id=>document.getElementById(id);
 const money=n=>CONFIG.currency+n.toLocaleString("en-IN");
 let cart={},cat="All",query="";
@@ -201,14 +238,14 @@ function ctl(p){
 }
 function pic(p){
   if(!p.imgs)return EMOJI[p.cat]||"🎆";
-  const im=p.imgs.map((s,i)=>`<img src="${s}" alt="${p.name} photo ${i+1}" loading="lazy">`).join("");
+  const im=p.imgs.map((s,i)=>`<img src="${s}" alt="${p.cat} category artwork ${i+1}" loading="lazy">`).join("");
   if(p.imgs.length<2)return im;
   return `<div class="car">${im}</div><div class="dots">${p.imgs.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`;
 }
 document.addEventListener("scroll",e=>{const c=e.target;if(c.classList&&c.classList.contains("car")){const n=Math.round(c.scrollLeft/c.clientWidth);[...c.nextElementSibling.children].forEach((d,i)=>d.classList.toggle("on",i===n))}},true);
 function grid(){
   const list=PRODUCTS.filter(p=>(cat==="All"||p.cat===cat)&&p.name.toLowerCase().includes(query));
-  $("grid").innerHTML=list.length?list.map(p=>`<article class="card"><div class="pic ${p.stock?"":"out"}">${pic(p)}${p.imgs?'<span class="alt">Representative image</span>':''}${p.mrp>p.price?`<span class="tag">${Math.round(100-p.price*100/p.mrp)}% off</span>`:""}</div>
+  $("grid").innerHTML=list.length?list.map(p=>`<article class="card"><div class="pic ${p.stock?"":"out"}">${pic(p)}${p.imgs?'<span class="alt">Category image</span>':''}${p.mrp>p.price?`<span class="tag">${Math.round(100-p.price*100/p.mrp)}% off</span>`:""}</div>
   <div class="info"><div class="name">${p.name}</div><div class="unit">${p.content} · Code ${p.code}</div><div class="unit">In stock</div><div class="price">${money(p.price)} <s class="mrp">${money(p.mrp)}</s></div>${ctl(p)}</div></article>`).join(""):`<div class="empty">No crackers match your search.</div>`;
 }
 const items=()=>Object.keys(cart).map(i=>({p:byId[i],q:cart[i]}));
@@ -270,7 +307,26 @@ $("send").onclick=()=>{
   window.location.href=`https://wa.me/${CONFIG.waNumber}?text=${encodeURIComponent(msg)}`;
 };
 
-renderCombos();chips();grid();bar();
+function startAutoCarousels(){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const slides=[...document.querySelectorAll(".hero-slide")],heroDots=[...document.querySelectorAll(".hero-dots i")];
+  let heroAt=0;
+  setInterval(()=>{
+    if(document.hidden)return;
+    heroAt=(heroAt+1)%slides.length;
+    slides.forEach((s,i)=>{const on=i===heroAt;s.classList.toggle("on",on);s.setAttribute("aria-hidden",String(!on));heroDots[i].classList.toggle("on",on)});
+  },4200);
+  setInterval(()=>{
+    if(document.hidden)return;
+    document.querySelectorAll(".car").forEach(c=>{
+      const r=c.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return;
+      const next=(Math.round(c.scrollLeft/c.clientWidth)+1)%c.children.length;
+      c.scrollTo({left:next*c.clientWidth,behavior:"smooth"});
+    });
+  },4800);
+}
+
+renderCombos();chips();grid();bar();startAutoCarousels();
 </script>
 </body>
 </html>
