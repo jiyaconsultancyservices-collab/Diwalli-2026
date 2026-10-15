@@ -107,7 +107,7 @@ label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
 </head>
 <body>
 <header class="hero">
-  <img src="images/hero.webp" alt="Diwali night with fireworks, a lit skyline and glowing diyas">
+  <img src="images/ttc-hero-2026.jpg" alt="TTC Crackers Diwali fireworks over a glowing Indian city">
   <div class="txt">
     <h1>TTC Crackers</h1>
     <p>Certified quality, straight from Sivakasi.</p>
@@ -158,10 +158,14 @@ const PRODUCTS = [{"id":"TTC001","code":"1","name":"10 CM ELECTRIC SPARKLE","cat
 const COMBOS=[{"id":"family-1000","name":"Family Starter","budget":1000,"kids":"Sparklers, colour smoke & pencils","elders":"Matka flower pot & gentle fountains","items":{"TTC001":1,"TTC230":1,"TTC101":1,"TTC261":1,"TTC241":1,"TTC052":1}},{"id":"family-2000","name":"Family Celebration","budget":2000,"kids":"Sparklers, butterflies & helicopters","elders":"Flower pots, chakkars & fountains","items":{"TTC001":1,"TTC002":1,"TTC018":2,"TTC024":2,"TTC038":2,"TTC226":2,"TTC230":1,"TTC094":2,"TTC096":2,"TTC101":2}},{"id":"family-2500","name":"Grand Family Mix","budget":2500,"kids":"Sparklers, butterflies & helicopters","elders":"Flower pots, chakkars & fountains","items":{"TTC001":2,"TTC002":2,"TTC009":2,"TTC018":2,"TTC024":2,"TTC038":2,"TTC226":2,"TTC230":2,"TTC050":2,"TTC094":2,"TTC096":2,"TTC101":2}}];
 /* ======================== */
 
-const IMG={P011:"images/P011.webp",P012:"images/P012.webp",P021:"images/P021.webp",P028:"images/P028.webp",P030:"images/P030.webp",P042:"images/P042.webp",P045:"images/P045.webp",P051:"images/P051.webp",P019:"images/P019.webp",P022:"images/P022.webp",P033:"images/P033.webp",P034:"images/P034.webp",P035:"images/P035.webp",P053:"images/P053.webp",P041:"images/P041.webp",P047:"images/P047.webp",P044:"images/P044.webp",P048:"images/P048.webp",P054:"images/P054.webp",P013:"images/P013.webp",P032:"images/P032.webp",P003:"images/P003.webp",P028b:"images/P028b.webp",P005:"images/P005.webp",P052:"images/P052.webp",P040:"images/P040.webp",P038:"images/P038.webp",P049:"images/P049.webp",P029:"images/P029.webp",P024:"images/P024.webp",P031:"images/P031.webp",P006a:"images/P006a.webp",P006b:"images/P006b.webp",P006c:"images/P006c.webp",P006d:"images/P006d.webp",P006e:"images/P006e.webp",P006f:"images/P006f.webp",P006g:"images/P006g.webp",P009:"images/P009.webp",P016:"images/P016.webp",P032b:"images/P032b.webp",A_jenis:"images/A_jenis.webp",A_shower:"images/A_shower.webp",A_zooper:"images/A_zooper.webp",A_whistle:"images/A_whistle.webp",A_hellboy:"images/A_hellboy.webp",A_longtubes:"images/A_longtubes.webp",A_unico:"images/A_unico.webp",A_elec15:"images/A_elec15.webp",A_ajanta:"images/A_ajanta.webp",P008:"images/P008.webp",P014:"images/P014.webp",P007:"images/P007.webp"};
-const IMGMAP={P011:"P011",P012:"P012",P021:"P021",P028:["P028b","P028"],P030:"P030",P042:"P042",P045:"P045",P051:"P051",P019:"P019",P022:"P022",P023:"P022",P033:"P033",P034:"P034",P035:"P035",P053:"P053",P041:"P041",P047:"P047",P044:"P044",P048:"P048",P054:"P054",P013:"P013",P032:["P032b","P032"],P003:"P003",P005:"P005",P052:"P052",P040:"P040",P038:"P038",P049:"P049",P029:"P029",P024:"P024",P031:"P031",P006:["P006a","P006b","P006c","P006d","P006e","P006f","P006g"],P009:"P009",P016:"P016",P001:"A_jenis",P002:"P013",P004:"P003",P015:"A_jenis",P055:"P013",P056:"P003",P007:"P007",P010:"A_shower",P017:"A_zooper",P018:"A_whistle",P020:"A_hellboy",P025:"A_longtubes",P026:"P038",P027:"P047",P036:"P044",P037:"A_unico",P043:"A_elec15",P050:"P054",P039:"A_ajanta",P046:"P028b",P008:"P008",P014:"P014"};
-const ALT=new Set(['P001', 'P002', 'P004', 'P015', 'P055', 'P056', 'P010', 'P017', 'P018', 'P020', 'P025', 'P026', 'P027', 'P036', 'P037', 'P043', 'P050', 'P039', 'P046']);
-PRODUCTS.forEach(p=>{const m=IMGMAP[p.id];if(m)p.imgs=[].concat(m).map(k=>IMG[k])});
+const PRODUCT_ART={
+  family:"images/ttc-family-products.jpg",
+  aerial:"images/ttc-aerial-products.jpg",
+  gift:"images/ttc-gift-products.jpg"
+};
+const AERIAL_CATS=new Set(["Sky & Multi Colour Shots","Fancy Colour Single Shots","Sky Rocket","Fireworks Display Crackers","2026 Special Edition","Wizziling Series"]);
+const GIFT_CATS=new Set(["Family Combo","Kidzee Zone","Gun Items"]);
+PRODUCTS.forEach(p=>{p.imgs=[GIFT_CATS.has(p.cat)?PRODUCT_ART.gift:AERIAL_CATS.has(p.cat)?PRODUCT_ART.aerial:PRODUCT_ART.family]});
 const $=id=>document.getElementById(id);
 const money=n=>CONFIG.currency+n.toLocaleString("en-IN");
 let cart={},cat="All",query="";
@@ -204,7 +208,7 @@ function pic(p){
 document.addEventListener("scroll",e=>{const c=e.target;if(c.classList&&c.classList.contains("car")){const n=Math.round(c.scrollLeft/c.clientWidth);[...c.nextElementSibling.children].forEach((d,i)=>d.classList.toggle("on",i===n))}},true);
 function grid(){
   const list=PRODUCTS.filter(p=>(cat==="All"||p.cat===cat)&&p.name.toLowerCase().includes(query));
-  $("grid").innerHTML=list.length?list.map(p=>`<article class="card"><div class="pic ${p.stock?"":"out"}">${pic(p)}${ALT.has(p.id)&&p.imgs?'<span class="alt">Sample image</span>':''}${p.mrp>p.price?`<span class="tag">${Math.round(100-p.price*100/p.mrp)}% off</span>`:""}</div>
+  $("grid").innerHTML=list.length?list.map(p=>`<article class="card"><div class="pic ${p.stock?"":"out"}">${pic(p)}${p.imgs?'<span class="alt">Representative image</span>':''}${p.mrp>p.price?`<span class="tag">${Math.round(100-p.price*100/p.mrp)}% off</span>`:""}</div>
   <div class="info"><div class="name">${p.name}</div><div class="unit">${p.content} · Code ${p.code}</div><div class="unit">In stock</div><div class="price">${money(p.price)} <s class="mrp">${money(p.mrp)}</s></div>${ctl(p)}</div></article>`).join(""):`<div class="empty">No crackers match your search.</div>`;
 }
 const items=()=>Object.keys(cart).map(i=>({p:byId[i],q:cart[i]}));
