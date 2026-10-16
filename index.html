@@ -271,6 +271,13 @@ function grid(){
 }
 const items=()=>Object.keys(cart).map(i=>({p:byId[i],q:cart[i]}));
 const total=()=>items().reduce((s,x)=>s+x.p.price*x.q,0);
+function createOrderId(){
+  const d=new Date(),pad=n=>String(n).padStart(2,"0");
+  const stamp=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  let code="";
+  try{code=crypto.getRandomValues(new Uint32Array(1))[0].toString(36).slice(-4).padStart(4,"0").toUpperCase()}catch(e){code=Math.random().toString(36).slice(2,6).toUpperCase()}
+  return `TTC-${stamp}-${code}`;
+}
 function bar(){
   const n=items().reduce((s,x)=>s+x.q,0);
   $("cartbar").classList.toggle("show",n>0);
@@ -323,8 +330,9 @@ $("send").onclick=()=>{
   if(!/^\d{6}$/.test(pn))return err.textContent="Enter a 6-digit pincode.";
   err.textContent="";
   ["nm","ph","ad","pn"].forEach(k=>{try{localStorage.setItem("c_"+k,$(k).value.trim())}catch(e){}});
+  const orderId=createOrderId();
   const rows=items().map(({p,q},i)=>`${i+1}. ${p.name} x${q} = ${money(p.price*q)}`).join("\n");
-  const msg=`🎆 *New Diwali Order* – ${CONFIG.shop}\n\n*Name:* ${nm}\n*Phone:* ${ph}\n*Address:* ${ad}\n*Pincode:* ${pn}\n\n*Items*\n${rows}\n\n*Total: ${money(total())}*`;
+  const msg=`🎆 *New Diwali Order* – ${CONFIG.shop}\n*Order ID:* ${orderId}\n\n*Name:* ${nm}\n*Phone:* ${ph}\n*Address:* ${ad}\n*Pincode:* ${pn}\n\n*Items*\n${rows}\n\n*Total: ${money(total())}*`;
   window.location.href=`https://wa.me/${CONFIG.waNumber}?text=${encodeURIComponent(msg)}`;
 };
 
