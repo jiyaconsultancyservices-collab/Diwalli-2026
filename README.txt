@@ -1,30 +1,24 @@
-RAJYALAKSHMI FIREWORKS - DIWALI STORE
-=====================================
+TTC CRACKERS — DIWALI 2026
+==========================
 
-FILES
-  index.html     the whole shop page
-  images/        product photos, hero banner and logo
-  og-image.jpg   picture WhatsApp shows when the link is shared
+Store: https://jiyaconsultancyservices-collab.github.io/Diwalli-2026/
+Admin: https://jiyaconsultancyservices-collab.github.io/Diwalli-2026/admin.html
+Order WhatsApp: +91 93426 34197
+Admin Google account: jiyaconsultancyservices@gmail.com
 
-PUT IT ONLINE (free, about 5 minutes) - Netlify Drop
-  1. Open https://app.netlify.com/drop and sign in (free).
-  2. Drag this whole folder onto the page. You get a link like
-     https://something-random.netlify.app
-  3. In Site settings > Change site name, pick a name you like,
-     e.g. rajyalakshmi-diwali.netlify.app
-  4. Open index.html in a text editor and replace both places that say
-     https://YOUR-SITE.netlify.app with your real link. Upload the folder again
-     (drag it onto the same site's Deploys page). This makes the WhatsApp
-     link preview show your banner.
-  5. Send the link to yourself on WhatsApp and test a full order.
+index.html           Store, catalogue, family combos and checkout
+admin.html / admin.js Private Google sign-in and orders dashboard
+order-backend.js      Authenticated order storage
+order-core.js         Validation, numbering and WhatsApp message
+firebase-config.js   Public Firebase web configuration (not a password)
+firestore.rules      Server-enforced customer-data access controls
+BACKEND.md           Setup, testing, numbering and operating notes
+images/              Product and hero images
 
-CHANGE THINGS (open index.html in a text editor, near the top of the script)
-  CONFIG   waNumber (91 + 10 digits), minOrder, shop name
-  PRODUCTS one line per product: id, name, cat (category), price, mrp (crossed-out
-           price), stock (number in stock). Change price or stock there and re-upload.
-  Photos   put the file in images/ and ask for it to be linked to a product id.
+The storefront is hosted on GitHub Pages. Push changes to main to publish.
+Use an HTTP preview server rather than opening index.html as a local file.
+For backend tests and deployment, read BACKEND.md.
 
-BEFORE SHARING WIDELY
-  - Check your firecracker licence and your state's rules on selling online.
-  - Do a test order and confirm it reaches +91 91822 86897.
-  - After WhatsApp share, WhatsApp may cache the preview for a day.
+Orders saved in the dashboard are customer requests, not payments.
+Customers still tap Send in WhatsApp. Confirm prices and availability.
+Only new backend orders are recorded; old WhatsApp orders are not imported.

@@ -164,6 +164,7 @@ label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
   <div class="chips" id="chips"></div>
 </div>
 <main class="grid" id="grid"></main>
+<footer style="text-align:center;padding:24px 14px"><a href="admin.html" style="color:var(--mute)">Store admin</a></footer>
 
 <div class="cartbar" id="cartbar"><button id="open"><span id="cnt"></span><span id="sub"></span></button></div>
 
@@ -174,13 +175,17 @@ label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
     <div id="lines"></div>
     <div class="total"><span>Total</span><span id="tot"></span></div>
     <button class="more" id="more" type="button">Add more or swap items</button>
-    <label for="nm">Name</label><input id="nm" autocomplete="name">
+    <label for="nm">Name</label><input id="nm" autocomplete="name" maxlength="100">
     <label for="ph">Mobile number</label><input id="ph" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit number">
-    <label for="ad">Delivery address</label><textarea id="ad" rows="3" autocomplete="street-address"></textarea>
+    <label for="ad">Delivery address</label><textarea id="ad" rows="3" autocomplete="street-address" maxlength="500"></textarea>
     <label for="pn">Pincode</label><input id="pn" inputmode="numeric" maxlength="6" autocomplete="postal-code">
     <div class="err" id="err" role="alert"></div>
     <button class="send" id="send">Send order on WhatsApp</button>
-    <p class="note">WhatsApp will open with your order ready. Tap Send there to confirm.</p>
+    <p class="note">Your name, phone, delivery address and order will be saved privately for TTC staff to fulfil your request. WhatsApp opens next; tap Send there. Prices and availability are confirmed by TTC.</p>
+    <div id="orderSaved" hidden role="status" style="margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px">
+      <p id="savedMessage"></p><a id="whatsappRetry" rel="noopener">Open WhatsApp again</a>
+      <button id="newOrder" class="more" type="button" style="margin-top:12px">Start a new order</button>
+    </div>
   </div>
 </div>
 
@@ -233,7 +238,8 @@ let cart={},cat="All",query="";
 try{cart=JSON.parse(localStorage.getItem("cart")||"{}")||{}}catch(e){cart={}}
 const save=()=>{try{localStorage.setItem("cart",JSON.stringify(cart))}catch(e){}};
 const byId=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
-Object.keys(cart).forEach(k=>{if(!byId[k]||!byId[k].stock)delete cart[k]});
+if(typeof cart!=="object"||Array.isArray(cart))cart={};
+Object.keys(cart).forEach(k=>{if(!byId[k]||!Number.isInteger(cart[k])||cart[k]<1||cart[k]>byId[k].stock)delete cart[k]});
 
 function renderCombos(){
   $("combos").innerHTML=COMBOS.map(c=>{
@@ -244,6 +250,7 @@ function renderCombos(){
   }).join("");
 }
 function addCombo(id){
+  if(sending)return;
   const combo=COMBOS.find(c=>c.id===id);if(!combo)return;
   Object.entries(combo.items).forEach(([pid,q])=>{cart[pid]=Math.min((cart[pid]||0)+q,byId[pid].stock)});
   save();grid();bar();lines();
@@ -269,18 +276,8 @@ function grid(){
   $("grid").innerHTML=list.length?list.map(p=>`<article class="card"><div class="pic ${p.stock?"":"out"}">${pic(p)}${p.img?'<span class="alt">Category image</span>':''}${p.mrp>p.price?`<span class="tag">${Math.round(100-p.price*100/p.mrp)}% off</span>`:""}</div>
   <div class="info"><div class="name">${p.name}</div><div class="unit">${p.content} · Code ${p.code}</div><div class="unit">In stock</div><div class="price">${money(p.price)} <s class="mrp">${money(p.mrp)}</s></div>${ctl(p)}</div></article>`).join(""):`<div class="empty">No crackers match your search.</div>`;
 }
-const items=()=>Object.keys(cart).map(i=>({p:byId[i],q:cart[i]}));
+const items=()=>Object.keys(cart).filter(i=>byId[i]&&Number.isInteger(cart[i])&&cart[i]>0&&cart[i]<=byId[i].stock).map(i=>({p:byId[i],q:cart[i]}));
 const total=()=>items().reduce((s,x)=>s+x.p.price*x.q,0);
-let fallbackOrderSequence=99;
-function createOrderId(){
-  let next=100;
-  try{
-    const saved=Number.parseInt(localStorage.getItem("ttc_order_sequence"),10);
-    next=Number.isFinite(saved)&&saved>=100?saved+1:100;
-    localStorage.setItem("ttc_order_sequence",String(next));
-  }catch(e){next=++fallbackOrderSequence}
-  return `TTC-${next}`;
-}
 function bar(){
   const n=items().reduce((s,x)=>s+x.q,0);
   $("cartbar").classList.toggle("show",n>0);
@@ -294,6 +291,7 @@ function lines(){
   $("tot").textContent=money(total());
 }
 function change(i,d){
+  if(sending)return;
   const q=(cart[i]||0)+d;
   if(q<=0)delete cart[i];else cart[i]=Math.min(q,byId[i].stock);
   save();grid();bar();lines();
@@ -312,6 +310,7 @@ function openSheet(message=""){
   lines();$("err").textContent="";$("comboMsg").textContent=message;$("comboMsg").classList.toggle("show",!!message);$("sheet").classList.add("show");document.body.classList.add("sheet-open");$("close").focus();
 }
 function closeSheet(){
+  if(sending)return;
   $("sheet").classList.remove("show");document.body.classList.remove("sheet-open");if(items().length)$("open").focus();
 }
 $("open").onclick=()=>openSheet();
@@ -323,20 +322,52 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("sheet").classLis
 // remember customer details for next time
 ["nm","ph","ad","pn"].forEach(k=>{try{$(k).value=localStorage.getItem("c_"+k)||""}catch(e){}});
 
-$("send").onclick=()=>{
+let sending=false;
+$("send").onclick=async()=>{
+  if(sending)return;
   const nm=$("nm").value.trim(),ph=$("ph").value.trim(),ad=$("ad").value.trim(),pn=$("pn").value.trim(),err=$("err");
   if(!items().length)return err.textContent="Add at least one item.";
   if(CONFIG.minOrder&&total()<CONFIG.minOrder)return err.textContent=`Minimum order is ${money(CONFIG.minOrder)}.`;
-  if(nm.length<2)return err.textContent="Enter your name.";
+  if(nm.length<2||nm.length>100)return err.textContent="Enter your name (2–100 characters).";
   if(!/^[6-9]\d{9}$/.test(ph))return err.textContent="Enter a valid 10-digit mobile number.";
-  if(ad.length<8)return err.textContent="Enter your full delivery address.";
-  if(!/^\d{6}$/.test(pn))return err.textContent="Enter a 6-digit pincode.";
+  if(ad.length<8||ad.length>500)return err.textContent="Enter your full delivery address (8–500 characters).";
+  if(!/^[1-9]\d{5}$/.test(pn))return err.textContent="Enter a valid 6-digit pincode.";
   err.textContent="";
+  $("orderSaved").hidden=true;
+  const snapshot={name:nm,phone:ph,address:ad,pincode:pn,
+    items:items().map(({p,q})=>({id:p.id,name:p.name,price:p.price,quantity:q,lineTotal:p.price*q})),total:total()};
   ["nm","ph","ad","pn"].forEach(k=>{try{localStorage.setItem("c_"+k,$(k).value.trim())}catch(e){}});
-  const orderId=createOrderId();
-  const rows=items().map(({p,q},i)=>`${i+1}. ${p.name} x${q} = ${money(p.price*q)}`).join("\n");
-  const msg=`🎆 *New Diwali Order* – ${CONFIG.shop}\n*Order ID:* ${orderId}\n\n*Name:* ${nm}\n*Phone:* ${ph}\n*Address:* ${ad}\n*Pincode:* ${pn}\n\n*Items*\n${rows}\n\n*Total: ${money(total())}*`;
-  window.location.href=`https://wa.me/${CONFIG.waNumber}?text=${encodeURIComponent(msg)}`;
+  sending=true;
+  const button=$("send"),label=button.textContent;
+  const controls=[...$("sheet").querySelectorAll("input,textarea,button")];
+  controls.forEach(control=>control.disabled=true);
+  button.textContent="Saving order…";
+  const slow=setTimeout(()=>{err.textContent="Still connecting… Keep this page open. A retry will use the same saved order."},12000);
+  try{
+    // Never open WhatsApp without a confirmed database save and server-backed order ID.
+    const [{saveOrderToBackend},{normalizeOrder,whatsappMessage}]=await Promise.all([
+      import("./order-backend.js"),import("./order-core.js")
+    ]);
+    const order=normalizeOrder(snapshot);
+    const {orderId}=await saveOrderToBackend(order);
+    const url=`https://wa.me/${CONFIG.waNumber}?text=${encodeURIComponent(whatsappMessage(order,orderId,CONFIG.shop))}`;
+    $("savedMessage").textContent=`Order ${orderId} saved. Send the prepared message on WhatsApp to contact TTC. Reopening WhatsApp won't create another order.`;
+    $("whatsappRetry").href=url;
+    $("orderSaved").hidden=false;
+    err.textContent="";
+    window.location.href=url;
+  }catch(error){
+    err.textContent="We couldn't confirm that your order was saved. Check your internet connection and retry; the same request won't be saved twice. For help, call +91 93426 34197.";
+  }finally{
+    clearTimeout(slow);
+    sending=false;controls.forEach(control=>control.disabled=false);button.textContent=label;
+  }
+};
+$("newOrder").onclick=async()=>{
+  if(sending)return;
+  try{const backend=await import("./order-backend.js");backend.startNewOrder()}
+  catch{try{localStorage.removeItem("ttc_pending_submission_v1")}catch{}}
+  cart={};save();grid();bar();lines();$("orderSaved").hidden=true;closeSheet();
 };
 
 function startAutoCarousels(){

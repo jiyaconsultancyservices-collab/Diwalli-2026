@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'jiyaconsultancyservices@gmail.com'
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function orderPath(number) {
+      return /databases/$(database)/documents/orders/$('TTC-' + string(number));
+    }
+    function counterPath() { return /databases/$(database)/documents/counters/orders; }
+    function receiptPath(uid, submission) {
+      return /databases/$(database)/documents/orderReceipts/$(uid)/submissions/$(submission);
+    }
+    function validRequest(data) {
+      return data.keys().hasOnly([
+        'orderId', 'orderNumber', 'ownerId', 'submissionId', 'name', 'phone',
+        'address', 'pincode', 'items', 'total', 'status', 'source', 'createdAt'
+      ])
+        && data.ownerId == request.auth.uid
+        && data.submissionId is string && data.submissionId.matches('^[a-f0-9-]{36}$')
+        && data.orderNumber is int && data.orderNumber >= 100
+        && data.orderId == 'TTC-' + string(data.orderNumber)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.phone is string && data.phone.matches('^[6-9][0-9]{9}$')
+        && data.address is string && data.address.size() >= 8 && data.address.size() <= 500
+        && data.pincode is string && data.pincode.matches('^[1-9][0-9]{5}$')
+        // Untrusted order requests: admin checks catalogue prices before confirmation.
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 200
+        && data.total is int && data.total >= 500 && data.total <= 1000000
+        && data.status == 'New' && data.source == 'TTC Crackers web store'
+        && data.createdAt == request.time;
+    }
+
+    match /orders/{orderId} {
+      allow create: if signedIn() && validRequest(request.resource.data)
+        && orderId == request.resource.data.orderId
+        && get(counterPath()).data.lastNumber + 1 == request.resource.data.orderNumber
+        && getAfter(counterPath()).data.lastNumber == request.resource.data.orderNumber
+        && !exists(receiptPath(request.auth.uid, request.resource.data.submissionId))
+        && getAfter(receiptPath(request.auth.uid, request.resource.data.submissionId)).data.orderId == orderId;
+      allow read: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.status in ['New', 'Confirmed', 'Packed', 'Completed', 'Cancelled']
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /counters/orders {
+      // Only the non-sensitive sequence number is readable by checkout sessions.
+      allow get: if signedIn();
+      allow list, create, delete: if false;
+      allow update: if signedIn()
+        && request.resource.data.keys().hasOnly(['lastNumber'])
+        && request.resource.data.lastNumber is int
+        && request.resource.data.lastNumber == resource.data.lastNumber + 1
+        && !exists(orderPath(request.resource.data.lastNumber))
+        && getAfter(orderPath(request.resource.data.lastNumber)).data.ownerId == request.auth.uid
+        && getAfter(orderPath(request.resource.data.lastNumber)).data.createdAt == request.time;
+    }
+
+    match /orderReceipts/{uid}/submissions/{submission} {
+      // No customer details in receipts. Customers cannot read or list anyone else's receipts.
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, update, delete: if false;
+      allow create: if signedIn() && request.auth.uid == uid
+        && submission.matches('^[a-f0-9-]{36}$')
+        && request.resource.data.keys().hasOnly(['orderId', 'orderNumber', 'createdAt'])
+        && request.resource.data.orderNumber is int && request.resource.data.orderNumber >= 100
+        && request.resource.data.orderId == 'TTC-' + string(request.resource.data.orderNumber)
+        && request.resource.data.createdAt == request.time
+        && !exists(orderPath(request.resource.data.orderNumber))
+        && getAfter(orderPath(request.resource.data.orderNumber)).data.ownerId == uid
+        && getAfter(orderPath(request.resource.data.orderNumber)).data.submissionId == submission;
+    }
+  }
+}

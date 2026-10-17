@@ -1,0 +1,23 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "anonymous": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "TTC Crackers",
+        "supportEmail": "jiyaconsultancyservices@gmail.com",
+        "authorizedRedirectUris": [
+          "https://ttc-crackers-orders.firebaseapp.com/__/auth/handler"
+        ]
+      }
+    }
+  },
+  "emulators": {
+    "firestore": { "host": "127.0.0.1", "port": 8087 },
+    "auth": { "host": "127.0.0.1", "port": 9097 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}
